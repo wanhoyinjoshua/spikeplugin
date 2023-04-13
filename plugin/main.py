@@ -61,7 +61,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
     #do main stuff 
    
 
-    print(parseddata)
+
 
     #store it as tuple where [(1,single_pulse),([1,2],paired_pulse),(1,carrier_frequency),(1,single_tran_fq),([1,2],paried_tran_fq)
     """
@@ -80,10 +80,11 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
     i=0
 
     def clearfirstpass(triggeruncleaned):
+        print("cleaning khz ...")
         i = 0
         triggercleaned = []
-        while i < len(triggeruncleaned):
-            print(i)
+        while tqdm(i < len(triggeruncleaned)):
+            
             # clean out all kilihertz first
             carrier_frq = 10
             # units s
@@ -91,8 +92,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
             try:
                 rightdiff = triggeruncleaned[i + 1] - triggeruncleaned[i]
                 if rightdiff < per_s:
-                    print("this is a kilahertz, skip ten now")
-                    print(triggeruncleaned[i])
+                    
                     triggercleaned.append(triggeruncleaned[i])
                     i += carrier_frq
                     continue
@@ -104,7 +104,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         else:
             return triggercleaned
     triggercleaned= clearfirstpass(triggeruncleaned)
-    print (len(triggercleaned))
+
     i=0
 
     # The above code is parsing a list of trigger values and identifying different types of triggers such
@@ -132,13 +132,13 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
                 rightdiff2 = triggercleaned[i + 2] - triggercleaned[i + 1]
                 if rightdiff > 1 and rightdiff > paired_pulse_isi:
                     # is single pusle
-                    print("sigle")
+                  
                     parsedtrigger.append(("single",triggercleaned[i]))
                 elif rightdiff < paired_pulse_isi and rightdiff2 > paired_pulse_isi:
-                    print("start double")
+                    
                     startdouble.append(triggercleaned[i])
                 elif rightdiff5 / 5 < per_s_train:
-                    print("transstart")
+                    
                     starttrain.append(i)
                     starttrain.append(triggercleaned[i])
             elif i == len(triggercleaned) - 1:
@@ -148,12 +148,11 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
                 print(triggercleaned[i])
                 if leftdiff > 1 and leftdiff > paired_pulse_isi:
                     # is single pusle
-                    print("sigle")
-
+                    
                     parsedtrigger.append(("single", triggercleaned[i]))
                 elif leftdiff < paired_pulse_isi and leftdiff2 > paired_pulse_isi:
-                    print("end-double")
-                    print(triggercleaned[i])
+                   
+                   
                     if len(startdouble)==1:
                         #push
                         parsedtrigger.append(("paired_pulse",startdouble[0],triggercleaned[i]))
@@ -162,8 +161,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
 
 
                 elif leftdiff5 / 5 < per_s_train :
-                    print("trans ended")
-                    print(triggercleaned[i])
+                    
                     trainlist.append((starttrain[0],starttrain[1],i,triggercleaned[i]))
                     starttrain=[]
 
@@ -185,29 +183,26 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
             continue
         if (rightdiff > 1 and rightdiff > paired_pulse_isi) and (leftdiff > 1 and leftdiff > paired_pulse_isi):
             # is single pusle
-            print("sigle")
+           
 
             parsedtrigger.append(("single", triggercleaned[i]))
         elif rightdiff<paired_pulse_isi and leftdiff>paired_pulse_isi and rightdiff2>paired_pulse_isi:
-            print("start double")
-            print(triggercleaned[i])
+            
             startdouble.append(triggercleaned[i])
         elif rightdiff>paired_pulse_isi and leftdiff<paired_pulse_isi and leftdiff2>paired_pulse_isi:
-            print("end-double")
-            print(triggercleaned[i])
+            
             if len(startdouble) == 1:
                 # push
                 parsedtrigger.append(("paired_pulse", startdouble[0], triggercleaned[i]))
                 startdouble = []
         elif rightdiff5 / 5 < per_s_train and leftdiff> per_s_train:
-            print("transstart")
+          
             starttrain.append(i)
             starttrain.append(triggercleaned[i])
 
 
         elif leftdiff5/5< per_s_train and rightdiff> per_s_train:
-            print("trans ended")
-            print(triggercleaned[i])
+           
 
             trainlist.append((starttrain[0], starttrain[1], i, triggercleaned[i]))
             starttrain = []
@@ -215,8 +210,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
 
         i+=1
 
-    print(parsedtrigger)
-    print (trainlist)
+  
     #index of trigger cleaned
     #because
     #get lsit of times where given intensity is stable for 3 seconds and only get the last 2 seconds
@@ -233,12 +227,13 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
 
     firstderivative = [intensity[i+1]-intensity[i] if i+1<len(intensity) else 0 for i in range(len(intensity))]
 
-    print(firstderivative)
+
     jj=0
     filteredintensity=[]
     stable=[]
     startstable=[]
     endstable=0
+    print("taking derivaative...")
     while jj <len(firstderivative) :
 
         #this is the acceptable change ( threshold 0.2)
@@ -247,7 +242,6 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
             startstable.extend([jj, intensitytime[jj], intensity[jj]])
             
 
-            print("reach")
         else:
             if len(startstable)>0:
                 endstable=jj
@@ -255,7 +249,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
                 
                 startstable=[];
                 endstable=0
-                print("break")
+             
             else:
                 pass
 
@@ -263,16 +257,14 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
 
         jj += 1
 
-    print (stable)
+
     for x in stable.copy() :
         if intensitytime[x[2]]-intensitytime[x[0]]>=3:
-            print("stay")
+           pass
         else:
-            print("delete")
+            
             stable.remove(x)
-    print(stable)
-    print(trainlist)
-
+    
     # The above code is filtering out a stable list based on a specified time period and appending the
     # filtered items to a new list called finaltrainlist. It then extracts the start and end times, as
     # well as the intensity, from each item in finaltrainlist and appends them to a new list called
@@ -289,7 +281,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
             else:
                 pass
 
-    print (finaltrainlist)
+
 
     traintime=[]
     for train in finaltrainlist:
@@ -310,7 +302,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         startindex = []
         endindex = []
 
-    print(traintime)
+
     #append to triggerclean
     for x in traintime:
         for i in range(x[0],x[1]):
@@ -322,8 +314,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         
         for i, x in enumerate(evokedspan):
             terminate=False
-            print(f"length{len(evokedspan)}")
-            print(i)
+ 
             if abs(x)-baselineavg > 2* baselinesdnew :
                 
                 
@@ -431,11 +422,10 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
             return
     
         
-        print("hi")
+     
         target1 = x[1]
         target2=x[2]
-        print(f"first target is {target1}")
-        print(f"second target is {target2}")
+       
 
         left = target1 - 200 / 1000
         right = 60 / 1000 + target2
@@ -449,8 +439,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         startindex = []
         endindex = []
         extractedspan = []
-        print(f"this is {left}")
-        print(f"this is {right}")
+
 
         def condition(element):
             return element >= left
@@ -481,16 +470,16 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         
         # slice the array to make it faster.
         sliced_array = time[startindex:]
-        print(sliced_array)
+  
         endindex = next((i for i, elem in enumerate(sliced_array) if condition2(elem)), None)
 
         subtargetarray=time[startindex:endindex+startindex]
-        print(subtargetarray)
+ 
         firststartindex=next((i for i, elem in enumerate(subtargetarray) if subcondition1left(elem)), None)
         firstendindex = next((i for i, elem in enumerate(subtargetarray) if subcondition1right(elem)), None)
         secondstartindex = next((i for i, elem in enumerate(subtargetarray) if subcondition2left(elem)), None)
         secondendindex = next((i for i, elem in enumerate(subtargetarray) if subcondition2right(elem)), None)
-        print([firststartindex,firstendindex,secondstartindex,secondendindex])
+     
         baselinesd2=np.std([abs(num) for num in parseddata.Fdi.values[secondendindex+startindex:endindex+startindex]])
         baselineavg2=np.average([abs(num) for num in parseddata.Fdi.values[secondendindex+startindex:endindex+startindex]])
         
@@ -512,7 +501,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         
         
 
-        print("hi")
+      
         target = x[1]
         left = target - 5 / 1000
         right = 25/ 1000 + target
@@ -521,8 +510,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         startindex = []
         endindex = []
         extractedspan = []
-        print(f"this is {left}")
-        print(f"this is {right}")
+     
 
         def condition(element):
             return element >= left
@@ -536,7 +524,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         startindex = next((i for i, elem in enumerate(time) if condition(elem)), None)
         # slice the array to make it faster.
         sliced_array = time[startindex:]
-        print(sliced_array)
+
 
         endindex = next((i for i, elem in enumerate(sliced_array) if condition2(elem)), None)
         baselinesd= np.std([abs(num) for num in parseddata.Fdi.values[startindex:triggerindex]])
@@ -554,7 +542,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
     }
 
 
-    print(parsedtrigger)
+
 
     ##now in have to actually read it and extract it
     checktrigger=[]
@@ -594,8 +582,8 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
                 pass
             else:
                 masteronset.append(result.onset)
-    print(f"this is {masterresult}")
-    print(pickledtarget)
+    
+    
     directory = "extracted_reflexes_data"
     directory_path = os.path.join(os.getcwd(), directory)
     os.makedirs(directory_path, exist_ok=True)
@@ -633,216 +621,11 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
     for x in masterresult:
 
         ax4.axvspan(parseddata.Fdi.times[x[0]], parseddata.Fdi.times[x[1]], alpha=0.2, color='gray')
-    print(masteronset)
+    
 
     ax4.vlines(x=list(filter(lambda x: x is not None, masteronset)), ymin=0, ymax=len(x), colors='red', ls=':', lw=1, label='vline_single - full height')
 
     plt.show()
 
     
-
-
-    """
-    cleanedtrigger=[]
-    for i  in range (len(parseddata.Ds8.times)):
-        index=i
-        x=parseddata.Ds8.times[index]
-        #units of kHz
-        carrier_frq=10
-        #units s
-        paired_pulse_isi=50/1000+0.01
-        #units s
-        per_s=1/(carrier_frq*1000)+0.00005
-
-        train_frq= 20+5
-        per_s_train=1/train_frq
-        print(index)
-        if index==0 or index==len(parseddata.Ds8.times)-1:
-
-
-            continue
-
-        try:
-            rightdiff= parseddata.Ds8.times[index+1]-x
-            rightdiff5=parseddata.Ds8.times[index+4]-x
-            leftdiff= x-parseddata.Ds8.times[index-1]
-        except:
-            continue
-
-        if
-        """
-    """
-        if (rightdiff>1and rightdiff>paired_pulse_isi) and (leftdiff>1 and leftdiff>paired_pulse_isi):
-            #is single pusle
-            print("sigle")
-
-        elif rightdiff < per_s and leftdiff < per_s:
-            pass
-
-        elif leftdiff > per_s*5 and rightdiff < per_s:
-
-            #then need to find end_car_frq and then determine whether or not is paired or not
-            endfre=0
-            endd =False
-            newindex = index
-            while endd==False:
-
-                newindex+=1
-                leftdiffn=leftdiff= x-parseddata.Ds8.times[newindex]-parseddata.Ds8.times[newindex-1]
-                rightdiffn = parseddata.Ds8.times[newindex+1] - parseddata.Ds8.times[newindex]
-                if leftdiffn < per_s and rightdiffn > per_s*5:
-
-                    endfre=parseddata.Ds8.times[newindex]
-
-                    endfre1=parseddata.Ds8.times[newindex+1]
-                    if endfre1-x < paired_pulse_isi and leftdiff > per_s:
-                        print("start_paired_car_frq")
-                        print(endfre1)
-
-
-
-                    endd=True
-
-
-
-
-
-        elif leftdiff < per_s and rightdiff > per_s*5:
-            print("end_car_frq")
-            print(x)
-
-        #this will break down when the firs one is a carrier signal, this might potentially condfuse carrier with trans
-        elif rightdiff5/5<paired_pulse_isi and rightdiff5/5>per_s:
-            print("started trans but not carrier")
-            break
-
-        elif rightdiff<paired_pulse_isi and leftdiff>per_s:
-            print("start_paired")
-
-        elif leftdiff<paired_pulse_isi and rightdiff>per_s:
-            print("end_paired")
-
-
-
-
-    def ispair(rightdiff,leftdiff,paired_pulse_isi,per_s):
-        if rightdiff < paired_pulse_isi and leftdiff > per_s:
-            print("start_paired")
-
-        elif leftdiff < paired_pulse_isi and rightdiff > per_s:
-            print("end_paired")
-
-
-    print(parseddata)
-    """
-
-    """
-    elif rightdiff< per_s and leftdiff<per_s :
-        print("mid_car_frq")
-        print(x)
-    elif leftdiff>per_s and rightdiff<per_s:
-        print("start_car_frq")
-        print(x)
-    elif leftdiff<per_s and rightdiff>per_s:
-        print("end_car_frq")
-        print(x)
-    """
-
-
-    """
-    values=parseddata.Dia_Smu.highpass(cutoff=20).lowpass(cutoff=450).rect().values
-    print(values)
-
-    print (parseddata.Triggertime.times)
-    print (parseddata.Dia_Smu.times)
-    print(dir(parseddata.Dia_Smu))
-
-
-
-    indexoftrigger= [i for i, x in enumerate( parseddata.Dia_Smu.times) if x in parseddata.Triggertime.times]
-
-    print(indexoftrigger)
-    result = tuple(zip(parseddata.Triggertime.times, indexoftrigger))
-    #25 datapoints = 1 ms
-    x = parseddata.Dia_Smu.times
-    y = parseddata.Dia_Smu.highpass(cutoff=20).lowpass(cutoff=450).rect().values
-
-    fig, ax = plt.subplots()
-    ax.plot(x, y)
-    xs = np.linspace(1, 21, 200)
-    baselinelist=parseddata.Dia_Smu.highpass(cutoff=20).lowpass(cutoff=450).rect().values
-    for xx, yy in result:
-        baselinelist= list(set(baselinelist)-set(parseddata.Dia_Smu.highpass(cutoff=20).lowpass(cutoff=450).rect().values[yy-50*25:yy+2500*25]))
-    print(baselinelist)
-    baselinesdnew=np.std(np.array(baselinelist))
-    print(baselinesdnew)
-
-    baselinedataindex=(150133,150133+25*50)
-    baselinesd=np.std(np.array(y[baselinedataindex[0]:baselinedataindex[1]]))
-    print(baselinesd)
-
-    for trigger,index in result:
-
-        plt.vlines(x=trigger, ymin=0, ymax=len(xs), colors='green', ls=':', lw=4, label='vline_single - full height')
-
-
-        ax.axvspan(parseddata.Dia_Smu.times[index-50*25], parseddata.Dia_Smu.times[index+2500*25], alpha=0.2, color='gray')
-        evokedspan=y[index-50*25:index+2500*25]
-        print(evokedspan)
-        gg=index-50*25
-        onset=0
-        for i,x in enumerate(evokedspan):
-            if x>3*baselinesdnew:
-
-                for p in range(100*25):
-                    if evokedspan[i+p]<3*baselinesdnew:
-                        continue
-
-
-                onset=i
-                break
-
-
-
-
-
-            else:
-                continue
-
-
-        print(onset+gg)
-
-        plt.vlines(x=parseddata.Dia_Smu.times[onset+gg], ymin=0, ymax=len(xs), colors='red', ls=':', lw=4, label='vline_single - full height')
-
-    plt.show()
-
-    evokedresponse=[]
-    for triggerindex in indexoftrigger:
-        #1 datapoint = 1ms
-        lowertarget=10
-        uppertarget=10
-        lowerbound = triggerindex-lowertarget
-        upperbound= triggerindex+uppertarget
-        evokedresponseobject={
-            "interval":[lowerbound,upperbound],
-            "reflex_onset":"",
-            "p2p_amplitude":"",
-            "area":""
-
-
-
-            }
-    """
-
-
-
-
-
-
-
-
-
-
-
-
 
