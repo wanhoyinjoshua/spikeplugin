@@ -9,24 +9,14 @@ import json
 """
 #file="C:/Users/wanho/Downloads/02_data000_HF_B.mat"
 #ile="C:/Users/wanho/Downloads/data/02_data001_C_M.mat"
-with open('data.json', 'r') as f:
-    data = json.load(f)
 
-subject=data['sub_ID']
-trialcondition=["kHz_monophasic","kHz_biphasic","conventional_monophasic","conventional_biphasic"]
-subtrialconditionlist=["threshold_window","doubles_105_threshold_window","doubles_5_mmax_window","trains_threshold_window"]
-list=[]
-for x in trialcondition:
+
     
-    filename=data[x]["filename"]
-    for y in subtrialconditionlist:
-        list.append((subject,filename,x,y,data[x][y][0],data[x][y][1]))
-print (list)
-for i in list:
-    #point this to the mat folder you shared with me on dropbox 
-    data =Trial(TrialInfo(file=f"C:/Users/wanho/Downloads/matfiles/{i[1]}.mat",channels=["MMax","FDI","Ds8","stim"]))
+
+data =Trial(TrialInfo(file=f"C:/Users/wanho/Downloads/matfiles/10_DATA001_H_M.mat",channels=["MMax","FDI","Ds8","stim"]))
     #need a list of [subject,trialcondition,subtrial,start,end]
     #and then loop through it 
+data.plot()
 
 
     #this function assumes the Trial object contains the following Ds8 and Fdi 
@@ -41,4 +31,3 @@ for i in list:
     # I read through your email last night but havnt had the chance to implement those ideas but will do so in the weekends and see how I go
     #I will think through the edge cases you mentioned, I might change up the whole struture or reuse some of it but I will see
     # the major problem now is it is simply taking too long ( will figure somethign out) and it the onset time is troublesome (will sort that out)
-    main.extract_evoked_responses(data,data.info.name,True,True,True,i[4],i[5],i[0],i[2],i[3],i[1])
