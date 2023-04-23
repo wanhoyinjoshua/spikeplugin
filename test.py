@@ -41,4 +41,4 @@ for i in list:
     # I read through your email last night but havnt had the chance to implement those ideas but will do so in the weekends and see how I go
     #I will think through the edge cases you mentioned, I might change up the whole struture or reuse some of it but I will see
     # the major problem now is it is simply taking too long ( will figure somethign out) and it the onset time is troublesome (will sort that out)
-    main.extract_evoked_responses(data,data.info.name,True,True,True,i[4],i[5],i[0],i[2],i[3],i[1])
+    main.extract_evoked_responses(data,data.info.name,False,True,False,i[4],i[5],i[0],i[2],i[3],i[1])

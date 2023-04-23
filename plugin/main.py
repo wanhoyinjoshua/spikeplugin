@@ -2,7 +2,8 @@
 from spike2py.trial import TrialInfo, Trial
 from tqdm import tqdm
 import os
-
+import time
+from plugin import utlis
 import pickle
 import matplotlib.pyplot as plt
 import mpld3
@@ -314,7 +315,8 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         else:
             
             stable.remove(x)
-    print(stable)
+   
+    
     
     # The above code is filtering out a stable list based on a specified time period and appending the
     # filtered items to a new list called finaltrainlist. It then extracts the start and end times, as
@@ -378,7 +380,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
 
         right=100/1000+target
 
-        time=parseddata.Fdi.times
+        times=parseddata.Fdi.times
     
     
         def condition(element):
@@ -389,19 +391,49 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
             return element >=target
         def intensity(element):
             return element >=target
+        def artifactstart(element,artifacttime):
+            return element >=artifacttime
         intensityindex=next((i for i, elem in enumerate(parseddata.Stim.times) if intensity(elem)), None)
-        triggerindex=next((i for i, elem in enumerate(time) if condition3(elem)), None)
+        triggerindex=next((i for i, elem in enumerate(times) if condition3(elem)), None)
         
-        startindex= next((i for i, elem in enumerate(time) if condition(elem)), None)
+        startindex= next((i for i, elem in enumerate(times) if condition(elem)), None)
         
         #slice the array to make it faster.
-        sliced_array = time[startindex:]
+        sliced_array = times[startindex:]
+
+        #find artifactsrart time 
+        
+        #noww to return the first index this is in the array 
         
         endindex=next((i for i, elem in enumerate(sliced_array) if condition2(elem)), None)
-        baselinesd= np.std([abs(num) for num in parseddata.Fdi.values[startindex:triggerindex]])
-        baselineavg=np.average([abs(num) for num in parseddata.Fdi.values[startindex:triggerindex]])
-        peak_to_peak, area,onsettime=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, startindex, endindex+startindex,triggerindex,parseddata.Fdi.times,baselinesd,baselineavg)
-
+        TKEOarray= utlis.TEOCONVERT(parseddata.Fdi.values)
+        skipartifactstarttime= parseddata.Fdi.times[triggerindex] +0.005
+        print(f"shitty {skipartifactstarttime}")
+        import time
+        
+        artifactsrtaindex= next((i for i, elem in enumerate(times[triggerindex:endindex+startindex]) if artifactstart(elem,skipartifactstarttime)), None)
+        artidactendindex=next((i for i, elem in enumerate(times[triggerindex:endindex+startindex]) if artifactstart(elem,skipartifactstarttime+0.09)), None)
+        print(artifactsrtaindex)
+        
+        baselinesd= np.std([abs(num) for num in TKEOarray[artifactsrtaindex+triggerindex:artidactendindex+triggerindex]])
+        baselineavg=np.average([abs(num) for num in TKEOarray[artifactsrtaindex+triggerindex:artidactendindex+triggerindex]])
+        peak_to_peak, area=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, startindex, endindex+startindex,triggerindex,parseddata.Fdi.times,baselinesd,baselineavg,artifactsrtaindex)
+        
+        
+        onsetindex=compute_outcome_measures.findonset(TKEOarray[triggerindex:endindex+startindex],baselinesd,baselineavg,artifactsrtaindex)
+        try:
+            onsettime =parseddata.Fdi.times[onsetindex+triggerindex]
+            relativetime=onsettime-parseddata.Fdi.times[triggerindex]
+        except:
+            onsettime=None
+        
+        
+        print(skipartifactstarttime)
+        print(artifactsrtaindex)
+        #need to figure out how many ms to skip and how many index....
+       
+       
+    
         data=SinglePulse("singlepulse",parseddata.Fdi.values[startindex:endindex+startindex],startindex,endindex+startindex,onsettime,peak_to_peak,area,0,parseddata.Stim.values[intensityindex],triggerindex)
 
 
@@ -468,6 +500,8 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
             return element >=target2
         def intensity(element):
             return element >=target1
+        def artifactstart(element,artifacttime):
+            return element >=artifacttime
         intensityindex=next((i for i, elem in enumerate(parseddata.Stim.times) if intensity(elem)), None)
         triggerindex1=next((i for i, elem in enumerate(time) if condition6(elem)), None)
         triggerindex2=next((i for i, elem in enumerate(time) if condition7(elem)), None)
@@ -480,21 +514,44 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         sliced_array = time[startindex:]
   
         endindex = next((i for i, elem in enumerate(sliced_array) if condition2(elem)), None)
-
+        skipartifactstarttime= parseddata.Fdi.times[triggerindex1] +0.005
+        print (skipartifactstarttime)
+        
+        skipartifactstarttime2= parseddata.Fdi.times[triggerindex2] +0.005
+        artifactsrtaindex= next((i for i, elem in enumerate(time[triggerindex1:endindex+startindex]) if artifactstart(elem,skipartifactstarttime)), None)
+        artifactsrtaindex2= next((i for i, elem in enumerate(time[triggerindex2:endindex+startindex]) if artifactstart(elem,skipartifactstarttime2)), None)
+        print (artifactsrtaindex)
+        print(artifactsrtaindex2)
+        
         subtargetarray=time[startindex:endindex+startindex]
  
         firststartindex=next((i for i, elem in enumerate(subtargetarray) if subcondition1left(elem)), None)
         firstendindex = next((i for i, elem in enumerate(subtargetarray) if subcondition1right(elem)), None)
         secondstartindex = next((i for i, elem in enumerate(subtargetarray) if subcondition2left(elem)), None)
         secondendindex = next((i for i, elem in enumerate(subtargetarray) if subcondition2right(elem)), None)
-     
-        baselinesd2=np.std([abs(num) for num in parseddata.Fdi.values[secondendindex+startindex:endindex+startindex]])
-        baselineavg2=np.average([abs(num) for num in parseddata.Fdi.values[secondendindex+startindex:endindex+startindex]])
+        #TKEOarray=utlis.TEOCONVERT(parseddata.Fdi.values)
+        #baselinesd2=np.std([abs(num) for num in TKEOarray[secondendindex+startindex:endindex+startindex]])
+        #baselineavg2=np.average([abs(num) for num in TKEOarray[secondendindex+startindex:endindex+startindex]])
         
-        peak_to_peak1, area1,onsettime1=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, firststartindex+startindex, firstendindex+firststartindex+startindex,triggerindex1,parseddata.Fdi.times,baselinesd,baselineavg)
-        peak_to_peak2, area2,onsettime2=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, secondstartindex+startindex, secondendindex+secondstartindex+startindex,triggerindex2,parseddata.Fdi.times,baselinesd2,baselineavg2)
+        peak_to_peak1, area1=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, firststartindex+startindex, firstendindex+firststartindex+startindex,triggerindex1,parseddata.Fdi.times,baselinesd,baselineavg,artifactsrtaindex)
+        peak_to_peak2, area2=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, secondstartindex+startindex, secondendindex+secondstartindex+startindex,triggerindex2,parseddata.Fdi.times,baselinesd,baselineavg,artifactsrtaindex)
+        onsetindex1=compute_outcome_measures.findonset(parseddata.Fdi.values[triggerindex1:firstendindex+firststartindex+startindex],baselinesd,baselineavg,0,3,5)
+        print([onsetindex1,baselinesd,baselineavg,artifactsrtaindex])
         
-        data = PairedPulse("pairedpulse",FDI[startindex:endindex+startindex],FDI[firststartindex+startindex:firstendindex+startindex],FDI[secondstartindex+startindex:secondendindex+startindex],firststartindex+startindex,firstendindex+startindex,secondstartindex+startindex,secondendindex+startindex,triggerindex1,triggerindex2,onsettime1,onsettime2,peak_to_peak1,peak_to_peak2,area1,area2,0,0,parseddata.Stim.values[intensityindex],triggerindex1)
+        
+        onsetindex2=compute_outcome_measures.findonset(parseddata.Fdi.values[triggerindex2:secondendindex+secondstartindex+startindex],baselinesd,baselineavg,artifactsrtaindex2,3,5)
+        try:
+            onset1=parseddata.Fdi.times[onsetindex1+triggerindex1]
+            
+        except:
+            onset1=None
+        try:
+            onset2=parseddata.Fdi.times[onsetindex2+triggerindex2]
+        except:
+            onset2=None
+        
+        
+        data = PairedPulse("pairedpulse",FDI[startindex:endindex+startindex],FDI[firststartindex+startindex:firstendindex+startindex],FDI[secondstartindex+startindex:secondendindex+startindex],firststartindex+startindex,firstendindex+startindex,secondstartindex+startindex,secondendindex+startindex,triggerindex1,triggerindex2,onset1,onset2,peak_to_peak1,peak_to_peak2,area1,area2,0,0,parseddata.Stim.values[intensityindex],triggerindex1)
         
         
         return data
@@ -513,7 +570,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         target = x[1]
         left = target - 5 / 1000
         right = 25/ 1000 + target
-        time = parseddata.Fdi.times
+        times = parseddata.Fdi.times
         emg = parseddata.Fdi.values
         startindex = []
         endindex = []
@@ -529,20 +586,44 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
             return element >=target
         def intensity(element):
             return element >=target
-        intensityindex=next((i for i, elem in enumerate(parseddata.Stim.times) if intensity(elem)), None)
-        triggerindex=next((i for i, elem in enumerate(time) if condition3(elem)), None)
+        def artifactstart(element,artifacttime):
+            return element >=artifacttime
         
-        startindex = next((i for i, elem in enumerate(time) if condition(elem)), None)
+        intensityindex=next((i for i, elem in enumerate(parseddata.Stim.times) if intensity(elem)), None)
+        triggerindex=next((i for i, elem in enumerate(times) if condition3(elem)), None)
+        
+        startindex = next((i for i, elem in enumerate(times) if condition(elem)), None)
         # slice the array to make it faster.
-        sliced_array = time[startindex:]
+        sliced_array = times[startindex:]
+        TKEOarray= utlis.TEOCONVERT(parseddata.Fdi.values)
+        skipartifactstarttime= parseddata.Fdi.times[triggerindex] +0.005
+        print(f"shitty {skipartifactstarttime}")
+        import time
+        
+        
+        
 
 
         endindex = next((i for i, elem in enumerate(sliced_array) if condition2(elem)), None)
+        skipartifactstarttime= parseddata.Fdi.times[triggerindex] +0.005
+        artifactsrtaindex= next((i for i, elem in enumerate(times[triggerindex:endindex+startindex]) if artifactstart(elem,skipartifactstarttime)), None)
+        print(artifactsrtaindex)
+        
+        #artidactendindex=next((i for i, elem in enumerate(times[triggerindex:endindex+startindex]) if artifactstart(elem,skipartifactstarttime+0.09)), None)
+        print(artifactsrtaindex)
+        
         baselinesd= np.std([abs(num) for num in parseddata.Fdi.values[startindex:triggerindex]])
         baselineavg=np.average([abs(num) for num in parseddata.Fdi.values[startindex:triggerindex]])
-        peak_to_peak, area,onsettime=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, startindex, endindex+startindex,triggerindex,parseddata.Fdi.times,baselinesd,baselineavg)
+        peak_to_peak, area=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, startindex, endindex+startindex,triggerindex,parseddata.Fdi.times,baselinesd,baselineavg,artifactsrtaindex)
+        onsetindex=compute_outcome_measures.findonset(TKEOarray[triggerindex:endindex+startindex],baselinesd,baselineavg,artifactsrtaindex)
+        try:
+            onsettime =parseddata.Fdi.times[onsetindex+triggerindex]
+            relativetime=onsettime-parseddata.Fdi.times[triggerindex]
+        except:
+            onsettime=None
         
         data=SingleTransPulse("single_trans_pulse",parseddata.Fdi.values[startindex:endindex+startindex],startindex,endindex+startindex,onsettime,peak_to_peak,area,0,parseddata.Stim.values[intensityindex],triggerindex)
+        
         return data
 
     lookup_table = {
@@ -607,18 +688,132 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
     img_path=os.path.join(trialconditionfolder, "img")
  
     
-       
+    
+
+    #do something with the pickledtarget 
+    print(parsedtrigger)
+    """
+        def diff_intensity_outcomemeasure(pickledtarget):
+            singleintensity = [round(i.intensity) for i in pickledtarget if i.name == "singlepulse"]
+            pariedintensity = [round(i.intensity)  for i in pickledtarget if i.name == "pairedpulse"]
+            single_trans_intensity = [round(i.intensity)  for i in pickledtarget if i.name == "single_trans_pulse"]
+            cleanedsingle=list(set(singleintensity))
+            cleanedpaired=list(set(pariedintensity))
+            cleanedtrans=list(set(single_trans_intensity))
+            def sorting (list):
+
+
+                if len(list) == 0:
+                    return list
+                else:
+                    newlist=sorted(list)
+                    return newlist
+            
+            
+            #need a list of waveforms to correspond with a list of intensity s, {{122,,,d,}} to [1,2,]
+            intensitylist=[]
+            for index,i in enumerate([sorting(cleanedsingle),sorting(cleanedpaired),sorting(cleanedtrans)]):
+                print('hi')
+                if index==0:
+                    name="singlepulse"
+                elif index==1:
+                    name="pairedpulse"
+
+                elif index==2:
+                    name="single_trans_pulse"
+                filtered_list=[]
+                for intensityvalue in i:
+                    for obj in pickledtarget:
+                        if obj.name == name and round(obj.intensity) == intensityvalue:
+                            if obj.name=="pairedpulse":
+                                filtered_list.append([(obj.startindex1,obj.endindex1,obj.startindex2,obj.endindex2)])
+                            else:
+                                filtered_list.append([(obj.waveform,obj.startindex,obj.endindex)])
+
+
+                    #filtered_list = [(obj.startindex,obj,endindex) for obj in pickledtarget if obj.name == name and round(obj.intensity) == intensityvalue]
+                    intensitylist.append((intensityvalue,filtered_list,index))
+
+            print (len(intensitylist))
+            return intensitylist
+        
+        groupedintensitylist=diff_intensity_outcomemeasure(pickledtarget)
+        print (groupedintensitylist)
+        def intensityparse(x,timeelapsed):
+            awaveform=[]
+            t_elasped=timeelapsed
+            
+            
+            xaixs=[]
+            yaxis=[]
+            print(x[1])
+            
+            #this is filtered list and it  is [[(,)],[],[]]
+            for y in x[1]:
+                
+                
+                awaveform.append(y[0][0])
+            max_len = max(len(arr) for arr in awaveform)
+            print(max_len)
+        
+            
+            def artifactstart(element,artifacttime):
+                return element >=artifacttime
+            # Resize the arrays to have the same shape
+            resized_list = [np.resize(arr, (max_len,)) for arr in awaveform]
+            avg_arr = np.mean(resized_list, axis=0)
+        
+            timeaxis = np.linspace(0,  t_elasped, num=len(avg_arr))
+            triggerindex = np.where(timeaxis >= 0.02)[0][0]
+            baselinesd= np.std([abs(num) for num in avg_arr[0:triggerindex]])
+            baselineavg=np.average([abs(num) for num in avg_arr[0:triggerindex]])
+            skipartifactstarttime= 0.0005+0.02
+            artifactsrtaindex= next((i for i, elem in enumerate(timeaxis) if artifactstart(elem,skipartifactstarttime)), None)
+            print(artifactsrtaindex)
+            onsetindex=compute_outcome_measures.findonset(avg_arr[triggerindex:],baselinesd,baselineavg,artifactsrtaindex-triggerindex)
+            print(onsetindex)
+            print(baselineavg)
+            print(baselinesd)
+            plt.plot(timeaxis,avg_arr)
+            plt.axvline(x=timeaxis[triggerindex], color='r')
+            plt.axvline(x=timeaxis[artifactsrtaindex], color='r')
+            plt.axvline(x=timeaxis[onsetindex+triggerindex], color='b')
+            plt.show()
+            plt.close()
+            
+            relativeonsettime=timeaxis[onsetindex+triggerindex]-timeaxis[triggerindex]
+            print(relativeonsettime)
+            
+            
+            return relativeonsettime
+        secondpickled=[]
+        for x in groupedintensitylist:
+            if x[2]=="pairedpulse":
+                print("hi")
+            
+            elif x[2]=="singlepulse":
+                result=intensityparse(x,0.3)
+                print(f"this is {result}")
+                blob={"intensity":x[0], "avg_onset":result}
+                secondpickled.append(blob)
+                
+
+            elif x[2 =="single_trans_pulse"]:
+                result=intensityparse(x,0.03)
+                print(f"this is {result}")
+                blob={"intensity":x[0], "avg_onset":result}
+                secondpickled.append(blob)
+
+        
+        print(secondpickled)
+        
+    """
     
     
 
         
 
-    with open(f"{data_file_path}.pkl", "wb") as f:
-        # Write the pickled data to the file
-        pickle.dump(pickledtarget, f)
-    
-    # Close the file
-    f.close()
+   
 
     print("Now there should a folder in the directory where you are running your script called extracted reflexs data, and the picked data should be in there!")
    
@@ -637,8 +832,17 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
     yy1=parseddata.Fdi.values
     print(masterresult)
 
+    #need to generate another file for grouped results...
+    #for each protocol 
+
+
+    groupedmeasure=graphgenerator.generate_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, parseddata, masterresult, masteronset, userstarttime, userendtime, img_path,pickledtarget,filedata)
     
 
-    graphgenerator.generate_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, parseddata, masterresult, masteronset, userstarttime, userendtime, img_path,pickledtarget,filedata)
+    with open(f"{data_file_path}.pkl", "wb") as f:
+        # Write the pickled data to the file
+        pickle.dump({"individual":pickledtarget,"grouped":groupedmeasure}, f)
     
+    # Close the file
+    f.close()
 

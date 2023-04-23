@@ -9,7 +9,7 @@ import  pywt
 
 from dataclasses import dataclass
 
-def _calculate_waveform_stats(waveform, start, end,triggerindex,times,baselinesd,baselineavg):
+def _calculate_waveform_stats(waveform, start, end,triggerindex,times,baselinesd,baselineavg,artifactsrtaindex):
         
         data_for_stats = waveform[start:end]
         peak_to_peak = np.ptp(data_for_stats)
@@ -19,8 +19,8 @@ def _calculate_waveform_stats(waveform, start, end,triggerindex,times,baselinesd
         #baselinesd= np.std([abs(num) for num in waveform[start:triggerindex]])
         #baselineavg=np.average([abs(num) for num in waveform[start:triggerindex]])
         
-        onsetindex = findonset(waveform[triggerindex:end],baselinesd,baselineavg)
-        #onsetindex=wavelet_onset_detection(np.array(waveform[triggerindex+20:end]))
+        onsetindex = findonset(waveform[triggerindex:end],baselinesd,baselineavg,artifactsrtaindex)
+        #onsetindex=wavelet_onset_detection(np.array(waveform[triggerindex+20:end]),'sym4',4,3,artifactsrtaindex)
         try:
             if onsetindex==None:
                 onsettime=None
@@ -31,7 +31,7 @@ def _calculate_waveform_stats(waveform, start, end,triggerindex,times,baselinesd
             pass
 
         
-        return peak_to_peak, area,onsettime
+        return peak_to_peak, area
  
 
 def plot(signal):
@@ -49,10 +49,50 @@ def plot(signal):
     plt.tight_layout()
    
 
-def findonset(evokedspan,baselinesdnew,baselineavg):
+def findonset(evokedspan,baselinesdnew,baselineavg,artifactsrtaindex,threshold=1.5,ranged=1):
+    onset=0
+
+    #default values for threshold is 1.5 
+    #default values for range is 1
+    #for double likley need threshold 3, range 5 
+    
+    
+    for i, x in enumerate(evokedspan):
+        if i<=artifactsrtaindex:
+            continue
+        terminate=False
+        print(f"length{len(evokedspan)}")
+        print(i)
+        if abs(x)-baselineavg > threshold* baselinesdnew :
+            
+            
+            for p in range(ranged):
+                if len(evokedspan)-i<ranged:
+                    break
+                elif abs(evokedspan[i + p])-baselineavg < threshold * baselinesdnew:
+                    terminate=True
+                    break
+            
+
+                onset = i
+            
+            if terminate==True:
+                continue
+            else:
+
+
+                return onset-1
+
+        else:
+            continue
+
+
+def findonsetnew(evokedspan,baselinesdnew,baselineavg,artifactsrtaindex):
     onset=0
     
     for i, x in enumerate(evokedspan):
+        if i<=artifactsrtaindex:
+            continue
         terminate=False
         print(f"length{len(evokedspan)}")
         print(i)
@@ -80,10 +120,12 @@ def findonset(evokedspan,baselinesdnew,baselineavg):
             continue
 
 
-def wavelet_onset_detection(signal, wavelet='sym4', level=4, threshold=3):
+def wavelet_onset_detection(signal, wavelet, level, threshold,artifactsrtaindex):
     ###this is not working yet 
     # Decompose signal into wavelet coefficients
-    coeff = pywt.wavedec(signal, wavelet, mode="smooth",level=3)
+    
+    percent_changes = np.diff(signal) 
+    coeff = pywt.wavedec(percent_changes[artifactsrtaindex:len(signal)-1], wavelet, mode="smooth",level=3)
     # Calculate a threshold for each level of the wavelet decomposition
     thresholds = [threshold*np.nanmedian(np.abs(c)) for c in coeff]
     # Set coefficients below the threshold to zero
@@ -94,18 +136,21 @@ def wavelet_onset_detection(signal, wavelet='sym4', level=4, threshold=3):
     onset = np.argmax(np.abs(reconstructed_signal) > threshold)
     # Calculate the onset as the point where the reconstructed signal first exceeds a threshold
     
-    fig, axs = plt.subplots(2, 1, figsize=(10, 6))
-    axs[0].plot(signal)
+    fig, axs = plt.subplots(3, 1, figsize=(10, 6))
+    axs[0].plot(signal[artifactsrtaindex:])
     
     axs[0].set_title("Original Signal")
-    axs[1].plot(reconstructed_signal)
+    axs[1].plot(percent_changes[artifactsrtaindex:])
+    axs[1].set_title("Percentage change")
+    axs[2].plot(reconstructed_signal)
     
-    axs[1].set_title(f"{level}-Level Reconstructed Signal")
+    axs[2].set_title(f"{level}-Level Reconstructed Signal")
     #can i find the peak and then go to the left to find the point where thr value is increasing again
     plt.tight_layout()
+    plt.show()
     plt.close()
     
     
     
     
-    return onset
+    return onset+artifactsrtaindex
