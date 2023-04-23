@@ -440,7 +440,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
 
         return data
 
-        #subsetit and then calculate shit
+        #subsetit and then 
 
 
 
