@@ -112,12 +112,13 @@ def generate_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, par
                 baselineavg=np.average([abs(num) for num in TKEOarray[artifactsrtaindex:artidactendindex]])
                 #baselinesdold= np.std([abs(num) for num in TKEOarray[0:triggerindex]])
                 #baselineavg=np.average([abs(num) for num in TKEOarray[0:triggerindex]])
-                onsetindex=compute_outcome_measures.findonset(TKEOarray[triggerindex:],baselinesd,baselineavg,artifactsrtaindex-triggerindex)
+                onsetindex=compute_outcome_measures.findonset(TKEOarray[triggerindex:],baselinesd,baselineavg,artifactsrtaindex-triggerindex,1,5)
                 try:
                     onsetime=timeaxis[onsetindex+triggerindex]-timeaxis[triggerindex]
                 except:
                     onsetime=None
-                dataobject={"type":"single_pulse","intensity":pp[0],"avg_onset":onsetime}
+                peak2peak,area=compute_outcome_measures.compute_peak2peak_area(avg_arr[artifactsrtaindex:])
+                dataobject={"type":"single_pulse","intensity":pp[0],"avg_onset":onsetime,"avg_peak2peak":peak2peak,"avg_area":area}
                 intensity_grouped_outcome_list.append(dataobject)
 
                 try:
@@ -202,13 +203,19 @@ def generate_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, par
                 
                 ##all the index should stay the same 
 
-                timeaxisnew1 = np.linspace(0,  t_elasped, num=len(TKEOarray1))
-                timeaxisnew2 = np.linspace(0,  t_elasped, num=len(TKEOarray2))
-                onsetindex1=compute_outcome_measures.findonset(avg_arr1,baselinesd,baselineavg,artifactsrtaindex1,3,5)
-                onsetindex2=compute_outcome_measures.findonset(avg_arr2,baselinesd,baselineavg,artifactsrtaindex2,3,5)
+                timeaxisnew1 = np.linspace(0,  t_elasped, num=len(avg_arr1))
+                timeaxisnew2 = np.linspace(0,  t_elasped, num=len(avg_arr2))
+                onsetindex1=compute_outcome_measures.findonset(avg_arr1,baselinesd,baselineavg,artifactsrtaindex1,2,5)
+                onsetindex2=compute_outcome_measures.findonset(avg_arr2,baselinesd,baselineavg,artifactsrtaindex2,2,5)
+                
                 onsettime1=timeaxisnew1[onsetindex1]
                 onsettime2=timeaxisnew2[onsetindex2]
-                dataobject={"type":"paired_pulse","intensity":pp[0],"avg_onset1":onsettime1,"avg_onset2":onsettime2}
+                peak2peak1,area1=compute_outcome_measures.compute_peak2peak_area(avg_arr1[artifactsrtaindex1:])
+                peak2peak2,area2=compute_outcome_measures.compute_peak2peak_area(avg_arr2[artifactsrtaindex2:])
+                peak_to_peak_ratio=peak2peak1/peak2peak2
+                area_ratio=area1/area2
+                ##need to find the ratio between areas, and peak to peak.
+                dataobject={"type":"paired_pulse","intensity":pp[0],"avg_onset1":onsettime1,"avg_onset2":onsettime2,"avg_peak_to_peak1":peak2peak1,"avg_area1":area1,"avg_peak_to_peak2":peak2peak2,"avg_area2":area2,"peak_to_peak_ratio":peak_to_peak_ratio,"area_ratio":area_ratio}
                 intensity_grouped_outcome_list.append(dataobject)
 
                 try:
@@ -228,13 +235,21 @@ def generate_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, par
                 except:
                     ax2[0].plot(timeaxisnew1,avg_arr1,color="red")
                     ax2[1].plot(timeaxisnew2,avg_arr2,color="red")
-                    ax2[0].axvline(x=timeaxisnew1[onsetindex1], color='blue')
-                    ax2[0].axvline(x=timeaxisnew1[artifactsrtaindex1], color='blue')
-                    ax2[0].axvline(x=timeaxisnew1[endartifactsrtaindex1], color='blue')
-                    ax2[1].axvline(x=timeaxisnew2[onsetindex2], color='blue')
+                    try:
+                        ax2[0].axvline(x=timeaxisnew1[onsetindex1], color='blue')
+                    except:
+                        pass
 
-                    ax2[1].axvline(x=timeaxisnew2[artifactsrtaindex2], color='blue')
-                    ax2[1].axvline(x=timeaxisnew2[endartifactsrtaindex2], color='blue')
+                
+                
+                    
+                    try:
+                        ax2[1].axvline(x=timeaxisnew2[onsetindex2], color='blue')
+                    except:
+                        pass
+                  
+                        
+                  
                     #ax1[ppindex].plot(timeaxis,TKEOarray,color="green")
                     
                    
@@ -284,8 +299,8 @@ def generate_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, par
                     onsettime=timeaxis[onsetindex+triggerindex]-timeaxis[triggerindex]
                 except:
                     onsettime=None
-                
-                dataobject={"type":"trans_single_pulse","intensity":pp[0],"avg_onset":onsettime}
+                peak2peak,area=compute_outcome_measures.compute_peak2peak_area(avg_arr[artifactsrtaindex:])
+                dataobject={"type":"trans_single_pulse","intensity":pp[0],"avg_onset":onsettime,"avg_peak2peak":peak2peak,"avg_area":area}
                 intensity_grouped_outcome_list.append(dataobject)
                 #onsetindex=compute_outcome_measures.wavelet_onset_detection(np.array(avg_arr[triggerindex:]),'sym4',4,3,artifactsrtaindex)
                 try:
@@ -303,7 +318,7 @@ def generate_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, par
         fig2paried.savefig(f"{file_path}_combined_pairs.png",orientation='landscape',dpi = 300)
         fig3single_trans.savefig(f"{file_path}_combined_single_trans.png",orientation='landscape',dpi = 300)
         
-        plt.show()
+        
         plt.close()
         return intensity_grouped_outcome_list
    
@@ -348,7 +363,7 @@ def generate_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, par
             print(ymin)
             plt.xlim([xx1[x.triggerindex]-0.01,  parseddata.Fdi.times[x.endindex]+0.05])
             text1 = fig.text(0.5, 0.95, f"{filedataname}", ha='center', va='top')
-            text2 = fig.text(0.9, 0.90, f"Onset:{round(x.onset, 2)}" if x.onset is not None else "", ha='center', va='top')
+            text2 = fig.text(0.9, 0.90, f"Onset:{round(x.relativeonset, 2)}" if x.onset is not None else "", ha='center', va='top')
             text3 = fig.text(0.9, 0.80, f"Area:{round(x.area, 2)}" if x.area is not None else "", ha='center', va='top')
             text4 = fig.text(0.9, 0.70, f"peak to peak:{round(x.peak_to_peak, 2)}" if x.peak_to_peak is not None else "", ha='center', va='top')
 
@@ -379,7 +394,7 @@ def generate_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, par
             
             plt.ylim([ymin - 0.1*y_range,ymax +0.1*y_range])
             text1 = fig.text(0.5, 0.95, f"{filedataname}", ha='center', va='top')
-            text2 = fig.text(0.9, 0.90, f"Onset:{round(x.onset, 2)}" if x.onset is not None else "", ha='center', va='top')
+            text2 = fig.text(0.9, 0.90, f"Onset:{round(x.relativeonset, 2)}" if x.onset is not None else "", ha='center', va='top')
             text3 = fig.text(0.9, 0.80, f"Area:{round(x.area, 2)}" if x.area is not None else "", ha='center', va='top')
             text4 = fig.text(0.9, 0.70, f"peak to peak:{round(x.peak_to_peak, 2)}" if x.peak_to_peak is not None else "", ha='center', va='top')
                 
@@ -401,16 +416,18 @@ def generate_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, par
             
             plt.ylim([ymin - 0.1*y_range,ymax +0.1*y_range])
             text1 = fig.text(0.5, 0.95, f"{filedataname}", ha='center', va='top')
-            text2 = fig.text(0.5, 0.90, f"Onset1: {round(x.onset1, 2) if x.onset1 is not None else ''}", ha='center', va='top')
-            text3 = fig.text(0.5, 0.80, f"Onset2: {round(x.onset2, 2) if x.onset2 is not None else ''}", ha='center', va='top')
+            text2 = fig.text(0.5, 0.90, f"Onset1: {round(x.relativeonset1, 2) if x.onset1 is not None else ''}", ha='center', va='top')
+            text3 = fig.text(0.5, 0.80, f"Onset2: {round(x.relativeonset2, 2) if x.onset2 is not None else ''}", ha='center', va='top')
             text4 = fig.text(0.9, 0.90, f"Area1: {round(x.area1, 2) if x.area1 is not None else ''}", ha='center', va='top')
             text5 = fig.text(0.9, 0.80, f"Area2: {round(x.area2, 2) if x.area2 is not None else ''}", ha='center', va='top')
             text6 = fig.text(0.9, 0.70, f"Peak to peak1: {round(x.peak_to_peak1, 2) if x.peak_to_peak1 is not None else ''}", ha='center', va='top')
             text7 = fig.text(0.9, 0.60, f"Peak to peak2: {round(x.peak_to_peak2, 2) if x.peak_to_peak2 is not None else ''}", ha='center', va='top')
+            text8 = fig.text(0.9, 0.50, f"Peak to peak ratio: {round(x.peak_to_peak_ratio, 2) if x.peak_to_peak2 is not None else ''}", ha='center', va='top')
+            text9 = fig.text(0.9, 0.40, f"area ratio: {round(x.area_ratio, 2) if x.peak_to_peak2 is not None else ''}", ha='center', va='top')
 
             
             plt.savefig(f"{file_path}_{i}.png",dpi = 300,orientation='landscape')
-            text_objects = [text1, text2,text3, text4,text5,text6,text7]
+            text_objects = [text1, text2,text3, text4,text5,text6,text7,text8,text9]
 
             # remove the text objects
             for text_obj in text_objects:

@@ -16,6 +16,7 @@ import math
 import pickle
 from dataclasses import dataclass
 from plugin import compute_outcome_measures,graphgenerator
+from plugin import utlis
 
 
 @dataclass
@@ -24,6 +25,7 @@ class SinglePulse:
     waveform: list
     startindex:int
     endindex:int
+    relativeonset:int
     onset:float
     peak_to_peak: float
     area: float
@@ -43,7 +45,10 @@ class PairedPulse:
     endindex2:int
     trigger1index:int
     trigger2index:int
+    relativeonset1:int
+    
     onset1:float
+    relativeonset2:int
     onset2:float
     peak_to_peak1: float
     peak_to_peak2:float
@@ -53,6 +58,8 @@ class PairedPulse:
     rms2:float
     intensity:float
     triggerindex:int
+    peak_to_peak_ratio:float
+    area_ratio:float
 
 @dataclass
 class SingleTransPulse:
@@ -60,6 +67,7 @@ class SingleTransPulse:
     waveform: list
     startindex:int
     endindex:int
+    relativeonset:int
     onset:float
     peak_to_peak: float
     area: float
@@ -106,6 +114,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
             
             # clean out all kilihertz first
             carrier_frq = 10
+            #carrier_frq=khz_freq
             # units s
             per_s = 1 / (carrier_frq * 1000) + 0.00005
             try:
@@ -139,7 +148,10 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
     
         x=triggercleaned[i]
         #+0.01 is to account for small errors same as +5 for frequency
+        #here is the paired pulse 
+        #pair_frequency_units_hz
         paired_pulse_isi = 50 / 1000 + 0.01
+        #trans_frequency_units_hz
         train_frq = 20 + 5
         per_s_train = 1 / train_frq
         #edge case of first and last index 
@@ -417,7 +429,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         
         baselinesd= np.std([abs(num) for num in TKEOarray[artifactsrtaindex+triggerindex:artidactendindex+triggerindex]])
         baselineavg=np.average([abs(num) for num in TKEOarray[artifactsrtaindex+triggerindex:artidactendindex+triggerindex]])
-        peak_to_peak, area=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, startindex, endindex+startindex,triggerindex,parseddata.Fdi.times,baselinesd,baselineavg,artifactsrtaindex)
+        peak_to_peak, area=compute_outcome_measures.compute_peak2peak_area(parseddata.Fdi.values[artifactsrtaindex+triggerindex:endindex+startindex])
         
         
         onsetindex=compute_outcome_measures.findonset(TKEOarray[triggerindex:endindex+startindex],baselinesd,baselineavg,artifactsrtaindex)
@@ -426,6 +438,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
             relativetime=onsettime-parseddata.Fdi.times[triggerindex]
         except:
             onsettime=None
+            relativetime=None
         
         
         print(skipartifactstarttime)
@@ -434,7 +447,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
        
        
     
-        data=SinglePulse("singlepulse",parseddata.Fdi.values[startindex:endindex+startindex],startindex,endindex+startindex,onsettime,peak_to_peak,area,0,parseddata.Stim.values[intensityindex],triggerindex)
+        data=SinglePulse("singlepulse",parseddata.Fdi.values[startindex:endindex+startindex],startindex,endindex+startindex,relativetime,onsettime,peak_to_peak,area,0,parseddata.Stim.values[intensityindex],triggerindex)
 
 
 
@@ -532,9 +545,13 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         #TKEOarray=utlis.TEOCONVERT(parseddata.Fdi.values)
         #baselinesd2=np.std([abs(num) for num in TKEOarray[secondendindex+startindex:endindex+startindex]])
         #baselineavg2=np.average([abs(num) for num in TKEOarray[secondendindex+startindex:endindex+startindex]])
+        peak_to_peak1, area1=compute_outcome_measures.compute_peak2peak_area(parseddata.Fdi.values[artifactsrtaindex+triggerindex1:firstendindex+startindex])
+        #peak_to_peak1, area1=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, firststartindex+startindex, firstendindex+firststartindex+startindex,triggerindex1,parseddata.Fdi.times,baselinesd,baselineavg,artifactsrtaindex)
+        peak_to_peak2, area2=compute_outcome_measures.compute_peak2peak_area(parseddata.Fdi.values[artifactsrtaindex2+triggerindex2:secondendindex+startindex])
+        #peak_to_peak2, area2=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, secondstartindex+startindex, secondendindex+secondstartindex+startindex,triggerindex2,parseddata.Fdi.times,baselinesd,baselineavg,artifactsrtaindex2)
+        peak_to_peak_ratio=peak_to_peak1/peak_to_peak2
+        area_ratio=area1/area2
         
-        peak_to_peak1, area1=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, firststartindex+startindex, firstendindex+firststartindex+startindex,triggerindex1,parseddata.Fdi.times,baselinesd,baselineavg,artifactsrtaindex)
-        peak_to_peak2, area2=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, secondstartindex+startindex, secondendindex+secondstartindex+startindex,triggerindex2,parseddata.Fdi.times,baselinesd,baselineavg,artifactsrtaindex)
         onsetindex1=compute_outcome_measures.findonset(parseddata.Fdi.values[triggerindex1:firstendindex+firststartindex+startindex],baselinesd,baselineavg,0,3,5)
         print([onsetindex1,baselinesd,baselineavg,artifactsrtaindex])
         
@@ -542,16 +559,20 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         onsetindex2=compute_outcome_measures.findonset(parseddata.Fdi.values[triggerindex2:secondendindex+secondstartindex+startindex],baselinesd,baselineavg,artifactsrtaindex2,3,5)
         try:
             onset1=parseddata.Fdi.times[onsetindex1+triggerindex1]
+            relativetime1=onset1-parseddata.Fdi.times[triggerindex1]
             
         except:
             onset1=None
+            relativetime1=None
         try:
             onset2=parseddata.Fdi.times[onsetindex2+triggerindex2]
+            relativetime2=onset2-parseddata.Fdi.times[triggerindex2]
         except:
             onset2=None
+            relativetime2=None
         
         
-        data = PairedPulse("pairedpulse",FDI[startindex:endindex+startindex],FDI[firststartindex+startindex:firstendindex+startindex],FDI[secondstartindex+startindex:secondendindex+startindex],firststartindex+startindex,firstendindex+startindex,secondstartindex+startindex,secondendindex+startindex,triggerindex1,triggerindex2,onset1,onset2,peak_to_peak1,peak_to_peak2,area1,area2,0,0,parseddata.Stim.values[intensityindex],triggerindex1)
+        data = PairedPulse("pairedpulse",FDI[startindex:endindex+startindex],FDI[firststartindex+startindex:firstendindex+startindex],FDI[secondstartindex+startindex:secondendindex+startindex],firststartindex+startindex,firstendindex+startindex,secondstartindex+startindex,secondendindex+startindex,triggerindex1,triggerindex2,relativetime1,onset1,relativetime2,onset2,peak_to_peak1,peak_to_peak2,area1,area2,0,0,parseddata.Stim.values[intensityindex],triggerindex1,peak_to_peak_ratio,area_ratio)
         
         
         return data
@@ -597,7 +618,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         sliced_array = times[startindex:]
         TKEOarray= utlis.TEOCONVERT(parseddata.Fdi.values)
         skipartifactstarttime= parseddata.Fdi.times[triggerindex] +0.005
-        print(f"shitty {skipartifactstarttime}")
+        
         import time
         
         
@@ -614,7 +635,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         
         baselinesd= np.std([abs(num) for num in parseddata.Fdi.values[startindex:triggerindex]])
         baselineavg=np.average([abs(num) for num in parseddata.Fdi.values[startindex:triggerindex]])
-        peak_to_peak, area=compute_outcome_measures._calculate_waveform_stats(parseddata.Fdi.values, startindex, endindex+startindex,triggerindex,parseddata.Fdi.times,baselinesd,baselineavg,artifactsrtaindex)
+        peak_to_peak, area=compute_outcome_measures.compute_peak2peak_area(parseddata.Fdi.values[artifactsrtaindex+triggerindex:endindex+startindex])
         onsetindex=compute_outcome_measures.findonset(TKEOarray[triggerindex:endindex+startindex],baselinesd,baselineavg,artifactsrtaindex)
         try:
             onsettime =parseddata.Fdi.times[onsetindex+triggerindex]
@@ -622,7 +643,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
         except:
             onsettime=None
         
-        data=SingleTransPulse("single_trans_pulse",parseddata.Fdi.values[startindex:endindex+startindex],startindex,endindex+startindex,onsettime,peak_to_peak,area,0,parseddata.Stim.values[intensityindex],triggerindex)
+        data=SingleTransPulse("single_trans_pulse",parseddata.Fdi.values[startindex:endindex+startindex],startindex,endindex+startindex,onsettime,relativetime,peak_to_peak,area,0,parseddata.Stim.values[intensityindex],triggerindex)
         
         return data
 
@@ -838,6 +859,8 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
 
     groupedmeasure=graphgenerator.generate_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, parseddata, masterresult, masteronset, userstarttime, userendtime, img_path,pickledtarget,filedata)
     
+    #utility need to load in function to organise the data for indivisual to group all of them together 
+    pickledtarget=utlis.Group_Individual_Pulses(pickledtarget)
 
     with open(f"{data_file_path}.pkl", "wb") as f:
         # Write the pickled data to the file

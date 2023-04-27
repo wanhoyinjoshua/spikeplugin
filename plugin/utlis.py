@@ -1,5 +1,6 @@
 import numpy as np
 import time
+from itertools import groupby
 
 def TEOCONVERT(signal):
     signal=np.abs(signal)
@@ -14,7 +15,7 @@ def TEOCONVERT(signal):
     max_values = signal[max_indices]
    
     
-    energy = np.power(signal[1:-1],100) - signal[:-2]*signal[2:]
+    energy = np.power(signal[1:-1],200) - signal[:-2]*signal[2:]
 
 # Zero-pad the energy signal to match the length of the input signal
     energy = np.concatenate(([0], energy, [0]))
@@ -23,6 +24,24 @@ def TEOCONVERT(signal):
     
     #if max 2 signal in the array >1 the +1 if not let it be 
 
+def Group_Individual_Pulses(pickledtarget):
+    #now is a lsit of obejct, need to return a object with fields intensity, pulses (list )
+    ###{intensity:"10",pulses:[dataclass,....]}
     
+    ###
+    print(pickledtarget)
+    individualpulses= pickledtarget
+    for i in individualpulses:
+        i.intensity=round(i.intensity)
+    individualpulses.sort(key=lambda x: x.intensity)
+    groups = []
+    for key, group in groupby(individualpulses, key=lambda x: x.intensity):
+        groups.append(list(group))
+    pickledtarget=groups
+    return pickledtarget
+
+
+
+
     
     

@@ -8,6 +8,13 @@ import numpy as np
 import  pywt
 
 from dataclasses import dataclass
+##this fucntion assumes the waveeform is clean and have what we are after 
+def compute_peak2peak_area(waveform):
+    data_for_stats = waveform
+    peak_to_peak = np.ptp(data_for_stats)
+    dx = 0.1  # Spacing of integration points along axis of x
+    area = scipy.integrate.simpson(abs(data_for_stats), dx=dx)
+    return peak_to_peak, area
 
 def _calculate_waveform_stats(waveform, start, end,triggerindex,times,baselinesd,baselineavg,artifactsrtaindex):
         

@@ -4,11 +4,17 @@ import numpy as np
 import time
 
 # Open the pickled file in read-binary mode
-with open('C:/Users/wanho/Downloads/test/spikeplugin/extracted_reflexes_data/10/kHz_monophasic/doubles_105_threshold_window_10_DATA001_H_M/data.pkl', 'rb') as f:
+with open('C:/Users/wanho/Downloads/test/spikeplugin/extracted_reflexes_data/08/kHz_monophasic/trains_threshold_window_08_DATA003_H_M/data.pkl', 'rb') as f:
     # Load the list of objects from the pickled file
+    
     my_list = pickle.load(f)
 print(len(my_list["individual"]))
 
+for i in my_list["individual"]:
+    print(len(i))
+    print(i[0].intensity)
+
+print (my_list["grouped"] )
 
 def plot_diff_intensity(my_list):
     singleintensity = [round(i.intensity) for i in my_list if i.name == "singlepulse"]
