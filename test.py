@@ -52,8 +52,8 @@ for i in list:
     paarameter_dictionary={
     "parseddata":data,
     "filename": data.info.name,
-    "isparsesingle": True,
-    "isparsepaired": True,
+    "isparsesingle": False,
+    "isparsepaired": False,
     "isparsetrans": True,
     "userstarttime": i[4],
     "userendtime": i[5],

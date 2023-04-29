@@ -14,8 +14,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 import pickle
+
 from dataclasses import dataclass
 from plugin import compute_outcome_measures,graphgenerator
+from plugin.helper_functions import signal_cleaning, trains_extraction
 from plugin import utlis
 
 
@@ -95,175 +97,23 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
     """
 
     import numpy as np
-
+    
     arr = np.array(parseddata.Ds8.times)
-
-    triggeruncleaned = arr[np.where((arr >userstarttime) & (arr <userendtime))]
+  
+    triggeruncleaned=signal_cleaning.extract_user_window(arr, userstarttime,userendtime)
+    
+    khz_frq=10
+    triggercleaned= signal_cleaning.remove_khz(triggeruncleaned,khz_frq) 
 
     
-  
-    triggercleaned=[]
-    times=parseddata.Fdi.times
-    i=0
-
-    def clearfirstpass(triggeruncleaned):
-        print("cleaning khz ...")
-        i = 0
-        triggercleaned = []
-        while i < len(triggeruncleaned):
-            
-            # clean out all kilihertz first
-            carrier_frq = 10
-            #carrier_frq=khz_freq
-            # units s
-            per_s = 1 / (carrier_frq * 1000) + 0.00005
-            try:
-                rightdiff = triggeruncleaned[i + 1] - triggeruncleaned[i]
-                if rightdiff < per_s:
-                    
-                    triggercleaned.append(triggeruncleaned[i])
-                    i += carrier_frq
-                    continue
-            except:
-                pass
-            i += 1
-        if len(triggercleaned)==0:
-            return triggeruncleaned
-        else:
-            return triggercleaned
-    triggercleaned= clearfirstpass(triggeruncleaned)
-
-    i=0
 
     # The above code is parsing a list of trigger values and identifying different types of triggers such
     # as single pulse, paired pulse, and train of pulses. It does this by checking the time differences
     # between adjacent trigger values and comparing them to predefined thresholds for each type of
     # trigger. The code then stores the identified triggers in separate lists and prints them at the end.
-    startdouble=[]
-    parsedtrigger=[]
-    starttrain=[]
-    istrains=False
-    trainlist=[]
-    while i < len(triggercleaned):
     
-        x=triggercleaned[i]
-        #+0.01 is to account for small errors same as +5 for frequency
-        #here is the paired pulse 
-        #pair_frequency_units_hz
-        paired_pulse_isi = 50 / 1000 + 0.01
-        #trans_frequency_units_hz
-        train_frq = 20 + 5
-        per_s_train = 1 / train_frq
-        #edge case of first and last index 
-        if i == 0 or i == len(triggercleaned) - 1:
-
-
-            if i==0:
-                rightdiff = triggercleaned[i + 1] - x
-                try:
-                    rightdiff5 = triggercleaned[i + 4] - x
-                except:
-                    rightdiff5 =-1
-                
-                rightdiff2 = triggercleaned[i + 2] - triggercleaned[i + 1]
-                
-                if rightdiff > 1 and rightdiff > paired_pulse_isi:
-                    # is single pusle
-                  
-                    parsedtrigger.append(("single",triggercleaned[i]))
-                elif rightdiff < paired_pulse_isi and rightdiff2 > paired_pulse_isi:
-                    
-                    
-                    parsedtrigger.append(("paired_pulse",triggercleaned[i],triggercleaned[i+1]))
-                    i+=1
-                    continue
-                    
-                elif rightdiff5>0 and rightdiff5 / 5 < per_s_train:
-                    
-                    starttrain.append(i)
-                    starttrain.append(triggercleaned[i])
-            elif i == len(triggercleaned) - 1:
-                try:
-                    leftdiff5 = x - triggercleaned[i - 4]
-                except:
-                    leftdiff5=-1
-                
-
-                leftdiff2 = triggercleaned[i - 1] - triggercleaned[i - 2]
-                
-                leftdiff = x - triggercleaned[i - 1]
-                
-                if leftdiff > 1 and leftdiff > paired_pulse_isi:
-                    # is single pusle
-                    
-                    parsedtrigger.append(("single", triggercleaned[i]))
-                
-
-
-                elif leftdiff5>0 and leftdiff5 / 5 < per_s_train :
-                    print("endtrain")
-                    trainlist.append((starttrain[0],starttrain[1],i,triggercleaned[i]))
-                    starttrain=[]
-
-                    pass
-
-
-            i+=1
-            continue
-
-        try:
-            rightdiff = triggercleaned[i + 1] - x
-            try:
-                rightdiff5 = triggercleaned[i + 4] - x
-            except:
-                rightdiff5 = -1
-
-            try:
-                rightdiff2=  triggercleaned[i +2] - triggercleaned[i +1]
-            except:
-                rightdiff2=100
-            
-            try:
-                leftdiff5= x- triggercleaned[i -4]
-            except:
-                leftdiff5= -1
-            
-            
-            
-            leftdiff = x - triggercleaned[i - 1]
-        except:
-            i += 1
-            continue
-        if (rightdiff > 1 and rightdiff > paired_pulse_isi) and (leftdiff > 1 and leftdiff > paired_pulse_isi):
-            # is single pusle
-           
-
-            parsedtrigger.append(("single", triggercleaned[i]))
-        elif rightdiff<paired_pulse_isi and leftdiff>paired_pulse_isi and rightdiff2>paired_pulse_isi:
-            print("startdouble")
-            startdouble.append(triggercleaned[i])
-            parsedtrigger.append(("paired_pulse", triggercleaned[i], triggercleaned[i+1]))
-            i+=1
-            continue
-            
-       
-            
-        elif rightdiff5>0 and rightdiff5 / 5 < per_s_train and leftdiff> per_s_train:
-            print("starttrain")
-            starttrain.append(i)
-            starttrain.append(triggercleaned[i])
-
-
-        elif leftdiff5>0 and leftdiff5/5< per_s_train and rightdiff> per_s_train:
-           
-            print("endtrain")
-            trainlist.append((starttrain[0], starttrain[1], i, triggercleaned[i]))
-            starttrain = []
-            pass
-
-        i+=1
-
-  
+    parsedtrigger, trainlist= signal_cleaning.classify_triggers(triggercleaned)
+   
     #index of trigger cleaned
     #because
     #get lsit of times where given intensity is stable for 3 seconds and only get the last 2 seconds
@@ -275,102 +125,17 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
     # value is outside the threshold, it checks if there are any values in "startstable". If there are, it
     # marks the end of the stable region and adds the start and end indices, times
 
-
     intensity=parseddata.Stim.values
     intensitytime=parseddata.Stim.times
-    
-
-   
-    
-
-    firstderivative = [intensity[i+1]-intensity[i] if i+1<len(intensity) else 0 for i in range(len(intensity))]
-
-   
-
-    jj=0
-    filteredintensity=[]
-    stable=[]
-    startstable=[]
-    endstable=0
-    
-    while jj <len(firstderivative) :
-
-        #this is the acceptable change ( threshold 0.2)
-        #this is the change intensity ,so if it deviates more than 0.2 in any direction it will mark the end of a stable period ( regardless of how long it is , even if it is only 0.5s)
-        if (firstderivative[jj]<=0.2 and firstderivative[jj]>=-0.2 ):
-
-            startstable.extend([jj, intensitytime[jj], intensity[jj]])
-            
-
-        else:
-            if len(startstable)>0:
-                endstable=jj 
-                stable.extend([(startstable[0], startstable[1], endstable-1, intensitytime[endstable-1], startstable[2])])
-                
-                startstable=[];
-                endstable=0
-             
-            else:
-                pass
-
-
-
-        jj += 1
-   
-    
-    
-    print(stable)
-    for x in stable.copy() :
-        #definition of stable period 
-        if intensitytime[x[2]]-intensitytime[x[0]]>=2:
-           pass
-        else:
-            
-            stable.remove(x)
-   
-    
-    
+    duration=2
+    stable= trains_extraction.extract_stable_trains_period(intensity,intensitytime,duration)
     # The above code is filtering out a stable list based on a specified time period and appending the
     # filtered items to a new list called finaltrainlist. It then extracts the start and end times, as
     # well as the intensity, from each item in finaltrainlist and appends them to a new list called
     # traintime. Finally, it appends each time interval to a list called parsedtrigger in the format of
     # ("single_trains_freq", triggercleaned[i]).
-    finaltrainlist=[]
-    ##now filiter out the stable list to peroid specified.
-    
-    print(trainlist)
-    for x in trainlist.copy():
-        starttargettime= x[1]
-        endtargettime=x[3]
-        for y in stable:
-            if y[1]>starttargettime and y[3]<endtargettime:
-                finaltrainlist.append(y)
-            else:
-                pass
-
-
+    traintime=trains_extraction.traintime(trainlist,stable,triggercleaned)
    
-    traintime=[]
-    print(finaltrainlist)
-    #finaltrainlist is a list of stable periods in intensity >3s but for all time not just trains period 
-    for train in finaltrainlist:
-        #return index from cleanedtriggerlist
-        #do the seconds  here trim the first second here
-        start= train[1]
-        end=train[3]
-        intensity=train[4]
-        startindex=[]
-        endindex=[]
-        #triggercleaned is cleaning of khz( first pass)
-        for i , x in enumerate(triggercleaned):
-            #this is adjusting how many seconds to trim ( this s trimming last 1 second)
-            if x>=end-1 and len(startindex)==0:
-                startindex.append(i)
-            if x>=end and len(endindex)==0:
-                endindex.append(i)
-        traintime.append((startindex[0],endindex[0],intensity))
-        startindex = []
-        endindex = []
 
 
     #append to triggerclean
@@ -381,6 +146,19 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
 
     
     print(parsedtrigger)
+
+###################
+#now we have the parsed trigger of every pusle, now we are ready to parse it 
+###################
+
+
+
+
+
+
+
+
+
    
     def parsesingle(x):
         import numpy as np
@@ -843,8 +621,7 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
     import numpy as np
 
     x = intensitytime
-    y1 = firstderivative
-    y2 = intensity
+    
 
     ##plot it out man
     #x1 will be FDI times and values and then
