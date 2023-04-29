@@ -1,6 +1,7 @@
 from plugin import main
 from spike2py.trial import TrialInfo, Trial
 import json
+import os
 """
 02_data001_C_M
 02_data002_HF_M
@@ -49,18 +50,37 @@ for i in list:
     #"pre_stim_time_plot_s":,
     #"post_stim_time_plot_s":,
     ###
+
+    directory = "extracted_reflexes_data"
+    subjectname=i[0]
+    trialcondition=i[2]
+    subtrialcondition=i[3]
+    filedata=i[1]
+
+
+
+    directory_path = os.path.join(os.getcwd(), directory)
+    os.makedirs(directory_path, exist_ok=True)
+    os.makedirs(os.path.join(os.getcwd(),directory, subjectname), exist_ok=True)
+    os.makedirs(os.path.join(os.getcwd(),directory, subjectname,trialcondition), exist_ok=True)
+    os.makedirs(os.path.join(os.getcwd(),directory, subjectname,trialcondition,f"{subtrialcondition}_{filedata}"), exist_ok=True)
+    trialconditionfolder=os.path.join(os.getcwd(),directory, subjectname,trialcondition,f"{subtrialcondition}_{filedata}")
+    data_file_path = os.path.join(trialconditionfolder, "data")
+    img_path=os.path.join(trialconditionfolder, "img")
     paarameter_dictionary={
     "parseddata":data,
     "filename": data.info.name,
-    "isparsesingle": False,
-    "isparsepaired": False,
+    "isparsesingle": True,
+    "isparsepaired":True,
     "isparsetrans": True,
     "userstarttime": i[4],
     "userendtime": i[5],
-    "subjectname": i[0],
-    "trialcondition": i[2],
-    "subtrialcondition": i[3],
-    "filedata": i[1]
+    "_window_pair":[15,40],
+    "_window_single":[200,100],
+    "_window_single_trains":[5,25],
+    "data_file_path":data_file_path,
+    "img_path":img_path
+
 
 
     }
