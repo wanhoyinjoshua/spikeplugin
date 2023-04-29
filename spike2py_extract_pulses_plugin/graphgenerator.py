@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import time
-from plugin import compute_outcome_measures
+from spike2py_extract_pulses_plugin import compute_outcome_measures
+
 import numpy as np
-from plugin import utlis
+from spike2py_extract_pulses_plugin import utlis
 
 def generate_grouped_avg_graph_pickled(my_list,file_path,t_elasped_single=0.3,t_elasped_double_single=0.045,t_elasped_trains=0.03 ):
 

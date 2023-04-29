@@ -1,4 +1,4 @@
-from plugin import main
+from spike2py_extract_pulses_plugin import main
 from spike2py.trial import TrialInfo, Trial
 import json
 import os

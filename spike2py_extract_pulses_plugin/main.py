@@ -3,7 +3,7 @@ from spike2py.trial import TrialInfo, Trial
 from tqdm import tqdm
 import os
 import time
-from plugin import utlis
+from spike2py_extract_pulses_plugin import utlis
 import pickle
 import matplotlib.pyplot as plt
 import mpld3
@@ -16,9 +16,9 @@ import math
 import pickle
 
 from dataclasses import dataclass
-from plugin import compute_outcome_measures,graphgenerator
-from plugin.helper_functions import signal_cleaning, trains_extraction
-from plugin import utlis
+from spike2py_extract_pulses_plugin import compute_outcome_measures,graphgenerator
+from spike2py_extract_pulses_plugin.helper_functions import signal_cleaning, trains_extraction
+from spike2py_extract_pulses_plugin import utlis
 
 
 @dataclass
