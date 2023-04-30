@@ -3,7 +3,7 @@ from spike2py.trial import TrialInfo, Trial
 from tqdm import tqdm
 import os
 import time
-from spike2py_extract_pulses_plugin import utlis
+from spik2py_reflex_plugin import utlis
 import pickle
 import matplotlib.pyplot as plt
 import mpld3
@@ -16,9 +16,9 @@ import math
 import pickle
 
 from dataclasses import dataclass
-from spike2py_extract_pulses_plugin import compute_outcome_measures,graphgenerator
-from spike2py_extract_pulses_plugin.helper_functions import signal_cleaning, trains_extraction
-from spike2py_extract_pulses_plugin import utlis
+from spik2py_reflex_plugin import compute_outcome_measures,graphgenerator
+from spik2py_reflex_plugin.helper_functions import signal_cleaning, trains_extraction
+from spik2py_reflex_plugin import utlis
 
 
 @dataclass
@@ -78,7 +78,7 @@ class SingleTransPulse:
     triggerindex:int
     
 
-def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:bool,isparsepaired:bool,isparsetrans:bool,userstarttime:int,userendtime:int,_window_pair:any,_window_single:any,_window_single_trains:any,data_file_path:str,img_path:str):
+def extract_evoked_responses(parseddata:TrialInfo,triggerchannel:any,filename:str,isparsesingle:bool,isparsepaired:bool,isparsetrans:bool,userstarttime:int,userendtime:int,khz_frq:int,_window_pair:any,_window_single:any,_window_single_trains:any,graphdisplaysettings:any,data_file_path:str,img_path:str):
     #do main stuff 
    
 
@@ -98,11 +98,11 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
 
     import numpy as np
     
-    arr = np.array(parseddata.Ds8.times)
+    arr = np.array(triggerchannel)
   
     triggeruncleaned=signal_cleaning.extract_user_window(arr, userstarttime,userendtime)
     
-    khz_frq=10
+  
     triggercleaned= signal_cleaning.remove_khz(triggeruncleaned,khz_frq) 
 
     
@@ -421,10 +421,11 @@ def extract_evoked_responses(parseddata:TrialInfo,filename:str,isparsesingle:boo
     #for each protocol 
 
     ##get the grouped averaghe measure 
-    graphgenerator.generate_individual_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, parseddata, masterresult, masteronset, userstarttime, userendtime, img_path,pickledtarget,filename)
-    time_elapsed_single=(_window_single[1]-_window_single[0])/1000
-    time_elapsed_double=(_window_pair[1]-_window_pair[0])/1000
-    time_elapsed_train=(_window_single_trains[1]-_window_single_trains[0])/1000
+    graphgenerator.generate_individual_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, parseddata, masterresult, masteronset, userstarttime, userendtime, img_path,pickledtarget,filename,graphdisplaysettings["single"][0],graphdisplaysettings["single"][1],graphdisplaysettings["double"][0],graphdisplaysettings["double"][1])
+    time_elapsed_single=(_window_single[1]+_window_single[0])/1000
+    print(time_elapsed_single)
+    time_elapsed_double=(_window_pair[1]+_window_pair[0])/1000
+    time_elapsed_train=(_window_single_trains[1]+_window_single_trains[0])/1000
     groupedmeasure=graphgenerator.generate_grouped_avg_graph_pickled(pickledtarget,img_path,time_elapsed_single,time_elapsed_double,time_elapsed_train)
 
     #utility need to load in function to organise the data for indivisual to group all of them together 

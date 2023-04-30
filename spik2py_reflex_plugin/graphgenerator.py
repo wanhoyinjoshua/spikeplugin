@@ -1,11 +1,11 @@
 import matplotlib.pyplot as plt
 import time
-from spike2py_extract_pulses_plugin import compute_outcome_measures
+from spik2py_reflex_plugin import compute_outcome_measures
 
 import numpy as np
-from spike2py_extract_pulses_plugin import utlis
+from spik2py_reflex_plugin import utlis
 
-def generate_grouped_avg_graph_pickled(my_list,file_path,t_elasped_single=0.3,t_elasped_double_single=0.045,t_elasped_trains=0.03 ):
+def generate_grouped_avg_graph_pickled(my_list,file_path,t_elasped_single=0.3,t_elasped_double_single=0.045,t_elasped_trains=0.03,pretriggersingle=0.01,posttriggersingle=0.05,pretriggerdouble=0.01,posttriggerdouble= 0.05 ):
 
     singleintensity = [round(i.intensity) for i in my_list if i.name == "singlepulse"]
     pariedintensity = [round(i.intensity)  for i in my_list if i.name == "pairedpulse"]
@@ -73,7 +73,7 @@ def generate_grouped_avg_graph_pickled(my_list,file_path,t_elasped_single=0.3,t_
             
             for i,wave in enumerate(pp[1]):
                 allwaveforms.append(wave)
-                t_elasped=0.3
+                t_elasped=t_elasped_single
                 timeaxis = np.linspace(0,  t_elasped, num=len(wave))
                 x_new = timeaxis 
                 try:
@@ -82,7 +82,7 @@ def generate_grouped_avg_graph_pickled(my_list,file_path,t_elasped_single=0.3,t_
                     ax1[ppindex].text(0.95, 0.95, f" {pp[0]}", transform=ax1[ppindex].transAxes, ha='right', va='top')
                 except:
                     ax1.plot(x_new,wave)
-                    ax1.text(0.95, 0.95, f" {pp[0]}", transform=ax1[ppindex].transAxes, ha='right', va='top')
+                    ax1.text(0.95, 0.95, f" {pp[0]}", transform=ax1.transAxes, ha='right', va='top')
             
             max_len = max(len(arr) for arr in allwaveforms)
             print(max_len)
@@ -99,6 +99,7 @@ def generate_grouped_avg_graph_pickled(my_list,file_path,t_elasped_single=0.3,t_
 
             timeaxis = np.linspace(0,  t_elasped, num=len(TKEOarray))
             ##i need trigger index, 
+            print(timeaxis)
             triggerindex = np.where(timeaxis >= 0.2)[0][0]
             
             #endbaseline 0.3-0.06
@@ -122,16 +123,19 @@ def generate_grouped_avg_graph_pickled(my_list,file_path,t_elasped_single=0.3,t_
             try:
                 ax1[ppindex].plot(timeaxis,avg_arr,color="red")
                 #ax1[ppindex].plot(timeaxis,TKEOarray,color="green")
-                ax1[ppindex].axvline(x=timeaxis[onsetindex+triggerindex], color='blue')
+                try:
+                    ax1[ppindex].axvline(x=timeaxis[onsetindex+triggerindex], color='blue')
+                except:
+                    pass
                 ax1[ppindex].set_xlim(0.2-0.005, 0.25)
     
                 
                 
             except:
-                ax1[ppindex].plot(timeaxis,avg_arr,color="red")
+                ax1.plot(timeaxis,avg_arr,color="red")
                 #ax1[ppindex].plot(timeaxis,TKEOarray,color="green")
                 
-                ax1[ppindex].set_xlim(0.2-0.005, 0.25)
+                ax1.set_xlim(0.2-0.005, 0.25)
     
             
         elif pp[2]==1:
@@ -261,7 +265,7 @@ def generate_grouped_avg_graph_pickled(my_list,file_path,t_elasped_single=0.3,t_
             
             for i,wave in enumerate(pp[1]):
                 allwaveforms.append(wave)
-                t_elasped=0.03
+                
                 timeaxis = np.linspace(0,  t_elasped, num=len(wave))
                 x_new=timeaxis
                 
@@ -325,7 +329,7 @@ def generate_grouped_avg_graph_pickled(my_list,file_path,t_elasped_single=0.3,t_
     
 
 
-def generate_individual_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, parseddata, masterresult, masteronset, userstarttime, userendtime,file_path,pickledtarget,filedataname):
+def generate_individual_graph(triggercleaned, triggeruncleaned, checktrigger, xx1, yy1, parseddata, masterresult, masteronset, userstarttime, userendtime,file_path,pickledtarget,filedataname,pretriggersingle,posttriggersingle,pretriggerdouble,posttriggerdouble):
     
     
     
@@ -369,7 +373,7 @@ def generate_individual_graph(triggercleaned, triggeruncleaned, checktrigger, xx
             y_range = ymax - ymin
             print(ymax)
             print(ymin)
-            plt.xlim([xx1[x.triggerindex]-0.01,  parseddata.Fdi.times[x.endindex]+0.05])
+            plt.xlim([xx1[x.triggerindex]-pretriggersingle,  parseddata.Fdi.times[x.endindex]+posttriggersingle])
             text1 = fig.text(0.5, 0.95, f"{filedataname}", ha='center', va='top')
             text2 = fig.text(0.9, 0.90, f"Onset:{round(x.relativeonset, 2)}" if x.onset is not None else "", ha='center', va='top')
             text3 = fig.text(0.9, 0.80, f"Area:{round(x.area, 2)}" if x.area is not None else "", ha='center', va='top')
@@ -423,7 +427,7 @@ def generate_individual_graph(triggercleaned, triggeruncleaned, checktrigger, xx
             print(ymax)
             print(ymin)
             y_range = ymax - ymin
-            plt.xlim([xx1[x.triggerindex]-0.01,  parseddata.Fdi.times[x.endindex2]+0.05])
+            plt.xlim([xx1[x.triggerindex]-pretriggerdouble,  parseddata.Fdi.times[x.endindex2]+posttriggerdouble])
             
             plt.ylim([ymin - 0.1*y_range,ymax +0.1*y_range])
             text1 = fig.text(0.5, 0.95, f"{filedataname}", ha='center', va='top')

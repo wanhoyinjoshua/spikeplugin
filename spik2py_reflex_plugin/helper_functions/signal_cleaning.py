@@ -40,6 +40,9 @@ def classify_triggers(triggercleaned):
     istrains=False
     trainlist=[]
     i=0
+    if len(triggercleaned)==1:
+        parsedtrigger.append(("single", triggercleaned[0]))
+        return parsedtrigger,trainlist
     while i < len(triggercleaned):
     
         x=triggercleaned[i]
