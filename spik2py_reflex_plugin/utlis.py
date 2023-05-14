@@ -29,6 +29,8 @@ def Group_Individual_Pulses(pickledtarget):
     ###{intensity:"10",pulses:[dataclass,....]}
     
     ###
+    if len(pickledtarget)==0:
+        return []
     print(pickledtarget)
     individualpulses= pickledtarget
     for i in individualpulses:

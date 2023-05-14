@@ -1,4 +1,4 @@
-from spik2py_reflex_plugin import main
+from spik2py_reflex_plugin import main,refactor
 from spike2py.trial import TrialInfo, Trial
 import json
 import os
@@ -15,14 +15,14 @@ with open('data.json', 'r') as f:
 
 subject=data['sub_ID']
 trialcondition=["kHz_monophasic","kHz_biphasic","conventional_monophasic","conventional_biphasic"]
-subtrialconditionlist=["mmax_window","threshold_window","doubles_105_threshold_window","doubles_5_mmax_window","trains_threshold_window"]
+subtrialconditionlist=["threshold_window","doubles_105_threshold_window","doubles_5_mmax_window","trains_threshold_window"]
 list=[]
 for x in trialcondition:
     
     filename=data[x]["filename"]
     for y in subtrialconditionlist:
         list.append((subject,filename,x,y,data[x][y][0],data[x][y][1]))
-print (list)
+
 for i in list:
     #point this to the mat folder you shared with me on dropbox 
     data =Trial(TrialInfo(file=f"C:/Users/wanho/Downloads/matfiles/{i[1]}.mat",channels=["MMax","FDI","Ds8","stim"]))
@@ -76,4 +76,14 @@ for i in list:
 
 
     }
-    main.extract_evoked_responses(**paarameter_dictionary)
+    file_data={
+    "parseddata":data,
+    "triggerchannel": triggerchannel,
+    "filename": data.info.name,
+    }
+    range={
+    "userstarttime": i[4],
+    "userendtime": i[5],
+    }
+    khz_clean=10
+    refactor.extract_evoked_responses(data,triggerchannel,range,khz_clean,data_file_path)

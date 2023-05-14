@@ -422,6 +422,7 @@ def generate_individual_graph(triggercleaned, triggeruncleaned, checktrigger, xx
 
 
         else:
+            pass
             ymax= np.max(np.array(yy1[x.triggerindex:x.endindex2]))
             ymin= np.min(np.array(yy1[x.triggerindex:x.endindex2]))
             print(ymax)

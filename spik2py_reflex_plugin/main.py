@@ -1,18 +1,17 @@
 
-from spike2py.trial import TrialInfo, Trial
+from spike2py.trial import TrialInfo
 from tqdm import tqdm
-import os
-import time
+
 from spik2py_reflex_plugin import utlis
 import pickle
 import matplotlib.pyplot as plt
-import mpld3
+
 from mpld3 import plugins
 
-import scipy
+
 import matplotlib.pyplot as plt
 import numpy as np
-import math
+
 import pickle
 
 from dataclasses import dataclass
@@ -80,6 +79,7 @@ class SingleTransPulse:
 
 def extract_evoked_responses(parseddata:TrialInfo,triggerchannel:any,filename:str,isparsesingle:bool,isparsepaired:bool,isparsetrans:bool,userstarttime:int,userendtime:int,khz_frq:int,_window_pair:any,_window_single:any,_window_single_trains:any,graphdisplaysettings:any,data_file_path:str,img_path:str):
     #do main stuff 
+    #I need to first of all define a clean data class 
    
 
 

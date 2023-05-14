@@ -7,15 +7,11 @@ def extract_user_window(arr, userstarttime,userendtime):
     return triggeruncleaned
 
 def remove_khz(triggeruncleaned,carrier_frq):
-    print("cleaning khz ...")
+    
     i = 0
     triggercleaned = []
     while i < len(triggeruncleaned):
-        
-        # clean out all kilihertz first
-        
-        #carrier_frq=khz_freq
-        # units s
+       
         per_s = 1 / (carrier_frq * 1000) + 0.00005
         try:
             rightdiff = triggeruncleaned[i + 1] - triggeruncleaned[i]
